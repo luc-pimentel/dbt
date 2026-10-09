@@ -29,6 +29,8 @@ on:
   pull_request:
     # catch when the PR is opened with the label or when the label is added
     types: [labeled]
+  push:
+    branches: [validate/16675-bot-changelog]
 
 permissions:
   contents: write
@@ -41,7 +43,7 @@ jobs:
         include:
           - label: "dependencies"
             changie_kind: "Dependencies"
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.UBUNTU_LATEST }}
 
     steps:
 
