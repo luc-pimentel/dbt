@@ -1,0 +1,1 @@
+[error] [ManifestLoadFailed (dbt1150)]: Failed to load manifest.json from state path 'does-not-exist': Failed to read file: does-not-exist/manifest.json: <os error>: <os error>

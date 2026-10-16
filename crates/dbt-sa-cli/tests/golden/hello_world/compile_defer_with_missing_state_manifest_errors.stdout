@@ -1,0 +1,5 @@
+   dbt-oss 
+   Loading profiles.yml
+   Parsing models/hello_world.sql
+==================== Execution Summary =====================
+Finished 'compile' with 1 error for target 'duckdb_mem' [duration]

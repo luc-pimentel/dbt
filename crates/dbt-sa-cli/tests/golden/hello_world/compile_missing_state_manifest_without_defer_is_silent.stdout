@@ -1,0 +1,10 @@
+   dbt-oss 
+   Loading profiles.yml
+   Parsing models/hello_world.sql
+ Rendering models/hello_world.sql
+Compiled node 'hello_world' is:
+select 'Hello World' as x
+==================== Execution Summary =====================
+Finished 'compile' successfully for target 'duckdb_mem' [duration]
+Processed: 1 model
+Summary: 1 total | 1 success
