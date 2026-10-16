@@ -647,6 +647,8 @@ pub struct EvalArgs {
     pub version_check: bool,
     pub introspect: bool,
     pub defer: bool,
+    /// `--defer` or `DBT_DEFER` was passed explicitly; `defer` alone is also true by default.
+    pub defer_requested: bool,
     pub fail_fast: bool,
     pub empty: bool,
     pub sample: Option<String>,

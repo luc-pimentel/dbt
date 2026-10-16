@@ -2907,6 +2907,7 @@ impl CommonArgs {
                 // default to defer if neither flag is passed
                 true
             },
+            defer_requested: self.defer && !self.no_defer,
             debug: self.debug,
             log_format_file: self.log_format_file,
             log_format: self.log_format,

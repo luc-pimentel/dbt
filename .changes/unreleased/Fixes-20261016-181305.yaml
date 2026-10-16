@@ -1,0 +1,7 @@
+kind: Fixes
+body: Error when `--defer --state` points to a directory without manifest.json instead of silently running without deferral
+time: 2026-10-16T18:13:05.475758-03:00
+custom:
+    author: luc-pimentel
+    issue: "16397"
+    project: dbt-core

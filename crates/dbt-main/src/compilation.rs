@@ -158,6 +158,18 @@ struct CompilationPhasesExecutor<'a> {
     token: CancellationToken,
 }
 
+/// With `--state`, a missing manifest.json is an error only when something needs it: a
+/// `state:` selector, or an explicit `--defer` that `--defer-state` does not redirect.
+fn on_missing_state_manifest(arg: &EvalArgs) -> OnManifestLoadFailure {
+    let needs_manifest = selectors_require_manifest(arg.select.as_ref(), arg.exclude.as_ref())
+        || (arg.defer_requested && arg.defer_state.is_none());
+    if needs_manifest {
+        OnManifestLoadFailure::Error
+    } else {
+        OnManifestLoadFailure::Ignore
+    }
+}
+
 /// Whether this `dbt show` reads `target/info_schema/` instead of the warehouse.
 ///
 /// Thin wrapper so the three call sites read as one decision: the predicate itself
@@ -724,18 +736,9 @@ impl<'a> CompilationPhasesExecutor<'a> {
         } else if let Some(state) = path_to_state {
             // --state was explicitly provided. If manifest.json exists but is broken,
             // try_new_with_target_path always errors regardless of on_failure (issue #1319).
-            // For a missing manifest.json, error only when the selector actually needs it
-            // (state:modified / state:new). Selectors like source_status:fresher and
-            // result: only need sources.json / run_results.json respectively, so a missing
-            // manifest.json should be silently ignored for them.
-            let manifest_on_failure = if selectors_require_manifest(
-                self.arg.select.as_ref(),
-                self.arg.exclude.as_ref(),
-            ) {
-                OnManifestLoadFailure::Error
-            } else {
-                OnManifestLoadFailure::Ignore
-            };
+            // A missing manifest.json is an error only when a state: selector or an explicit
+            // --defer needs it; result: and source_status: read other artifacts.
+            let manifest_on_failure = on_missing_state_manifest(&self.arg);
             Ok(Some(Arc::new(StateArtifacts::try_new_with_target_path(
                 state,
                 root_project_quoting,
@@ -3197,6 +3200,51 @@ mod tests {
             &FsCommand::Freshness,
             &schedule
         ));
+    }
+
+    #[test]
+    fn missing_state_manifest_errors_only_when_needed() {
+        use dbt_common::node_selector::parse_model_specifiers;
+        let select = |s: &str| Some(parse_model_specifiers(&[s.to_string()]).unwrap());
+
+        let state_selector = EvalArgs {
+            select: select("state:modified"),
+            ..Default::default()
+        };
+        assert_eq!(
+            on_missing_state_manifest(&state_selector),
+            OnManifestLoadFailure::Error
+        );
+
+        let explicit_defer = EvalArgs {
+            defer: true,
+            defer_requested: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            on_missing_state_manifest(&explicit_defer),
+            OnManifestLoadFailure::Error
+        );
+
+        let defer_state_override = EvalArgs {
+            defer_state: Some(PathBuf::from("other-state")),
+            ..explicit_defer
+        };
+        assert_eq!(
+            on_missing_state_manifest(&defer_state_override),
+            OnManifestLoadFailure::Ignore
+        );
+
+        // Default-on deferral with a selector that only reads run_results.json.
+        let default_defer = EvalArgs {
+            defer: true,
+            select: select("result:error"),
+            ..Default::default()
+        };
+        assert_eq!(
+            on_missing_state_manifest(&default_defer),
+            OnManifestLoadFailure::Ignore
+        );
     }
 
     #[test]
